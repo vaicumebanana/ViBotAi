@@ -22,6 +22,24 @@ h1 {
     margin-bottom: 20px;
 }
 
+#menu {
+    margin-bottom: 20px;
+}
+
+#menu button {
+    margin: 5px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #007BFF;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#menu button:hover {
+    background-color: #0056b3;
+}
+
 #chat-box {
     height: 300px;
     overflow-y: auto;
