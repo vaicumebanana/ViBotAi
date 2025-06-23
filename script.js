@@ -17,9 +17,6 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
         botMessage.className = 'message bot';
         botMessage.textContent = viBotResponse;
         messages.appendChild(botMessage);
-
-        // Salva a conversa no localStorage
-        saveConversation(userInput, viBotResponse);
     } else {
         // Se a resposta do ViBot falhar, exibe uma mensagem de erro
         const botMessage = document.createElement('div');
@@ -38,6 +35,10 @@ document.getElementById('new-chat').addEventListener('click', function() {
 
 document.getElementById('saved-chats').addEventListener('click', function() {
     showSavedChats();
+});
+
+document.getElementById('save-chat').addEventListener('click', function() {
+    saveCurrentConversation();
 });
 
 async function getViBotResponse(prompt, retries = 3) {
@@ -96,6 +97,19 @@ function saveConversation(userInput, viBotResponse) {
     localStorage.setItem('conversations', JSON.stringify(conversations));
 }
 
+function saveCurrentConversation() {
+    const messages = document.getElementById('messages');
+    const conversation = Array.from(messages.children).map(msg => ({
+        user: msg.classList.contains('user') ? msg.textContent : null,
+        bot: msg.classList.contains('bot') ? msg.textContent : null
+    }));
+    const filteredConversation = conversation.filter(entry => entry.user || entry.bot);
+    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
+    conversations.push(...filteredConversation);
+    localStorage.setItem('conversations', JSON.stringify(conversations));
+    alert('Conversa salva com sucesso!');
+}
+
 function clearChat() {
     const messages = document.getElementById('messages');
     messages.innerHTML = '';
@@ -107,14 +121,28 @@ function showSavedChats() {
     const messages = document.getElementById('messages');
     messages.innerHTML = '';
     conversations.forEach((conv, index) => {
-        const chatDiv = document.createElement('div');
-        chatDiv.className = 'saved-chat';
-        chatDiv.innerHTML = `
-            <div class="message user">${conv.user}</div>
-            <div class="message bot">${conv.bot}</div>
-            <button class="delete-chat" data-index="${index}">Excluir</button>
-        `;
-        messages.appendChild(chatDiv);
+        if (conv.user || conv.bot) {
+            const chatDiv = document.createElement('div');
+            chatDiv.className = 'saved-chat';
+            if (conv.user) {
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message user';
+                userMessage.textContent = conv.user;
+                chatDiv.appendChild(userMessage);
+            }
+            if (conv.bot) {
+                const botMessage = document.createElement('div');
+                botMessage.className = 'message bot';
+                botMessage.textContent = conv.bot;
+                chatDiv.appendChild(botMessage);
+            }
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-chat';
+            deleteButton.textContent = 'Excluir';
+            deleteButton.dataset.index = index;
+            chatDiv.appendChild(deleteButton);
+            messages.appendChild(chatDiv);
+        }
     });
 
     document.querySelectorAll('.delete-chat').forEach(button => {
