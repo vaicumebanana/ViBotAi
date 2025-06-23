@@ -17,6 +17,9 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
         botMessage.className = 'message bot';
         botMessage.textContent = viBotResponse;
         messages.appendChild(botMessage);
+
+        // Salva a conversa no localStorage
+        saveConversation(userInput, viBotResponse);
     } else {
         // Se a resposta do ViBot falhar, exibe uma mensagem de erro
         const botMessage = document.createElement('div');
@@ -27,6 +30,14 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
 
     // Limpa o campo de entrada
     document.getElementById('user-input').value = '';
+});
+
+document.getElementById('new-chat').addEventListener('click', function() {
+    clearChat();
+});
+
+document.getElementById('saved-chats').addEventListener('click', function() {
+    showSavedChats();
 });
 
 async function getViBotResponse(prompt, retries = 3) {
@@ -77,4 +88,41 @@ async function getViBotResponse(prompt, retries = 3) {
         }
     }
     return null;
+}
+
+function saveConversation(userInput, viBotResponse) {
+    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
+    conversations.push({ user: userInput, bot: viBotResponse });
+    localStorage.setItem('conversations', JSON.stringify(conversations));
+}
+
+function clearChat() {
+    const messages = document.getElementById('messages');
+    messages.innerHTML = '';
+    localStorage.removeItem('currentConversation');
+}
+
+function showSavedChats() {
+    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
+    const messages = document.getElementById('messages');
+    messages.innerHTML = '';
+    conversations.forEach((conv, index) => {
+        const chatDiv = document.createElement('div');
+        chatDiv.className = 'saved-chat';
+        chatDiv.innerHTML = `
+            <div class="message user">${conv.user}</div>
+            <div class="message bot">${conv.bot}</div>
+            <button class="delete-chat" data-index="${index}">Excluir</button>
+        `;
+        messages.appendChild(chatDiv);
+    });
+
+    document.querySelectorAll('.delete-chat').forEach(button => {
+        button.addEventListener('click', function() {
+            const index = this.getAttribute('data-index');
+            conversations.splice(index, 1);
+            localStorage.setItem('conversations', JSON.stringify(conversations));
+            showSavedChats();
+        });
+    });
 }
