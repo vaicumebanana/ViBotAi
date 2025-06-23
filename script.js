@@ -13,8 +13,11 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
     userMessage.textContent = userInput;
     messages.appendChild(userMessage);
 
+    // Obtém a última resposta do ViBot do localStorage
+    let lastBotResponse = localStorage.getItem('lastBotResponse') || '';
+
     // Envia a mensagem para a ViBot API
-    const viBotResponse = await getViBotResponse(userInput);
+    const viBotResponse = await getViBotResponse(userInput, lastBotResponse);
     if (viBotResponse) {
         // Adiciona a resposta do ViBot ao chat
         const botMessage = document.createElement('div');
@@ -24,6 +27,9 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
 
         // Salva a conversa no localStorage
         saveConversation(userInput, viBotResponse);
+
+        // Atualiza a última resposta do ViBot no localStorage
+        localStorage.setItem('lastBotResponse', viBotResponse);
     } else {
         // Se a resposta do ViBot falhar, exibe uma mensagem de erro
         const botMessage = document.createElement('div');
@@ -44,7 +50,7 @@ document.getElementById('saved-chats').addEventListener('click', function() {
     showSavedChats();
 });
 
-async function getViBotResponse(prompt, retries = 3) {
+async function getViBotResponse(userInput, lastBotResponse, retries = 3) {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCUu44sgw3iE_o_8Q3WyILNhQk1trtQVKw`;
     const headers = {
         'Content-Type': 'application/json'
@@ -55,7 +61,7 @@ async function getViBotResponse(prompt, retries = 3) {
             {
                 parts: [
                     {
-                        text: prompt
+                        text: `Última resposta: ${lastBotResponse}\nPergunta atual: "${userInput}"`
                     }
                 ]
             }
@@ -123,6 +129,7 @@ function clearChat() {
     const messages = document.getElementById('messages');
     messages.innerHTML = '';
     localStorage.removeItem('conversations');
+    localStorage.removeItem('lastBotResponse');
 }
 
 function showSavedChats() {
