@@ -13,11 +13,17 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
     userMessage.textContent = userInput;
     messages.appendChild(userMessage);
 
-    // Obtém a última resposta do ViBot do localStorage
-    let lastBotResponse = localStorage.getItem('lastBotResponse') || '';
+    // Obtém a conversa atual do localStorage
+    let conversation = JSON.parse(localStorage.getItem('conversation')) || [];
 
-    // Envia a mensagem para a ViBot API
-    const viBotResponse = await getViBotResponse(userInput, lastBotResponse);
+    // Adiciona a nova mensagem do usuário à conversa
+    conversation.push({ user: userInput, bot: '' });
+
+    // Salva a conversa atualizada no localStorage
+    localStorage.setItem('conversation', JSON.stringify(conversation));
+
+    // Envia a conversa para a ViBot API
+    const viBotResponse = await getViBotResponse(conversation);
     if (viBotResponse) {
         // Adiciona a resposta do ViBot ao chat
         const botMessage = document.createElement('div');
@@ -25,17 +31,19 @@ document.getElementById('chat-form').addEventListener('submit', async function(e
         botMessage.textContent = viBotResponse;
         messages.appendChild(botMessage);
 
-        // Salva a conversa no localStorage
-        saveConversation(userInput, viBotResponse);
-
-        // Atualiza a última resposta do ViBot no localStorage
-        localStorage.setItem('lastBotResponse', viBotResponse);
+        // Atualiza a conversa no localStorage com a resposta do ViBot
+        conversation[conversation.length - 1].bot = viBotResponse;
+        localStorage.setItem('conversation', JSON.stringify(conversation));
     } else {
         // Se a resposta do ViBot falhar, exibe uma mensagem de erro
         const botMessage = document.createElement('div');
         botMessage.className = 'message bot';
         botMessage.textContent = "Desculpe, houve um erro ao processar sua solicitação.";
         messages.appendChild(botMessage);
+
+        // Atualiza a conversa no localStorage com a mensagem de erro
+        conversation[conversation.length - 1].bot = "Desculpe, houve um erro ao processar sua solicitação.";
+        localStorage.setItem('conversation', JSON.stringify(conversation));
     }
 
     // Limpa o campo de entrada
@@ -50,22 +58,23 @@ document.getElementById('saved-chats').addEventListener('click', function() {
     showSavedChats();
 });
 
-async function getViBotResponse(userInput, lastBotResponse, retries = 3) {
+async function getViBotResponse(conversation, retries = 3) {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCUu44sgw3iE_o_8Q3WyILNhQk1trtQVKw`;
     const headers = {
         'Content-Type': 'application/json'
     };
     const data = {
         model: 'models/gemini-2.0-flash',
-        contents: [
-            {
-                parts: [
-                    {
-                        text: `Última resposta: ${lastBotResponse}\nPergunta atual: "${userInput}"`
-                    }
-                ]
-            }
-        ]
+        contents: conversation.map(entry => ({
+            parts: [
+                {
+                    text: entry.user
+                },
+                {
+                    text: entry.bot
+                }
+            ]
+        }))
     };
 
     for (let attempt = 0; attempt < retries; attempt++) {
@@ -100,16 +109,11 @@ async function getViBotResponse(userInput, lastBotResponse, retries = 3) {
     return null;
 }
 
-function saveConversation(userInput, viBotResponse) {
-    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
-    conversations.push({ user: userInput, bot: viBotResponse });
-    localStorage.setItem('conversations', JSON.stringify(conversations));
-}
-
 function loadConversations() {
-    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
+    const conversation = JSON.parse(localStorage.getItem('conversation')) || [];
     const messages = document.getElementById('messages');
-    conversations.forEach(conv => {
+    messages.innerHTML = '';
+    conversation.forEach(conv => {
         if (conv.user) {
             const userMessage = document.createElement('div');
             userMessage.className = 'message user';
@@ -128,8 +132,7 @@ function loadConversations() {
 function clearChat() {
     const messages = document.getElementById('messages');
     messages.innerHTML = '';
-    localStorage.removeItem('conversations');
-    localStorage.removeItem('lastBotResponse');
+    localStorage.removeItem('conversation');
 }
 
 function showSavedChats() {
