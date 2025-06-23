@@ -1,3 +1,7 @@
+document.addEventListener('DOMContentLoaded', function() {
+    loadConversations();
+});
+
 document.getElementById('chat-form').addEventListener('submit', async function(event) {
     event.preventDefault();
     const userInput = document.getElementById('user-input').value;
@@ -96,10 +100,29 @@ function saveConversation(userInput, viBotResponse) {
     localStorage.setItem('conversations', JSON.stringify(conversations));
 }
 
+function loadConversations() {
+    const conversations = JSON.parse(localStorage.getItem('conversations')) || [];
+    const messages = document.getElementById('messages');
+    conversations.forEach(conv => {
+        if (conv.user) {
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.textContent = conv.user;
+            messages.appendChild(userMessage);
+        }
+        if (conv.bot) {
+            const botMessage = document.createElement('div');
+            botMessage.className = 'message bot';
+            botMessage.textContent = conv.bot;
+            messages.appendChild(botMessage);
+        }
+    });
+}
+
 function clearChat() {
     const messages = document.getElementById('messages');
     messages.innerHTML = '';
-    localStorage.removeItem('currentConversation');
+    localStorage.removeItem('conversations');
 }
 
 function showSavedChats() {
